@@ -13,15 +13,30 @@ const server = http.createServer((req, res) => {
     json.message = `You accessed a specified route: ${url}`;
   }
 
-  if (method === "POST") {
-    fs.writeFileSync("message.txt", "Hello");
+  if (method === "POST" && url === "/") {
     res.statusCode = 302;
     res.setHeader("Location", "/");
     return res.end();
-  }
+  } else if (method === "POST" && url === "/message") {
+    const body = [];
+    req.on("data", (chunk) => {
+      body.push(chunk);
+    });
 
-  res.write(JSON.stringify(json));
-  res.end();
+    req.on("end", () => {
+      const parsedBody = Buffer.concat(body).toString(); // this will give us back a bunch of key value pairs of the request body
+      const parsed = JSON.parse(parsedBody);
+      json.message = `I received the message: ${parsed.message}`;
+
+      fs.writeFileSync("message.txt", parsed.message);
+
+      res.write(JSON.stringify(json));
+      res.end();
+    });
+  } else {
+    res.write(JSON.stringify(json));
+    res.end();
+  }
 });
 
 server.listen(3000);
