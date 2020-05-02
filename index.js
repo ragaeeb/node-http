@@ -23,20 +23,25 @@ const server = http.createServer((req, res) => {
       body.push(chunk);
     });
 
-    req.on("end", () => {
+    return req.on("end", () => {
       const parsedBody = Buffer.concat(body).toString(); // this will give us back a bunch of key value pairs of the request body
       const parsed = JSON.parse(parsedBody);
-      json.message = `I received the message: ${parsed.message}`;
 
-      fs.writeFileSync("message.txt", parsed.message);
+      fs.writeFile("message.txt", parsed.message, (err) => {
+        if (!err) {
+          json.message = `I received the message: ${parsed.message}`;
+          res.write(JSON.stringify(json));
+          return res.end();
+        }
 
-      res.write(JSON.stringify(json));
-      res.end();
+        json.message = `Error!`;
+        res.write(JSON.stringify(json));
+      });
     });
-  } else {
-    res.write(JSON.stringify(json));
-    res.end();
   }
+
+  res.write(JSON.stringify(json));
+  res.end();
 });
 
 server.listen(3000);
